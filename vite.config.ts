@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/camera/',
     build: {
-      outDir: 'dist/camera',
+      outDir: 'dist',
       cssCodeSplit: true,
     },
     server: {
