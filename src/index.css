@@ -1,21 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ベースリセット */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-/* 高さ伝播と余白除去 */
-html, body, #root {
-  height: 100vh;
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
 }
 
 /* フォントと背景 */
@@ -26,8 +13,9 @@ body {
   line-height: 1.6;
 }
 
-/* ルート要素（App.tsx内で描画される） */
+/* ルート要素 */
 #root {
-  display: flex;
-  flex-direction: column;
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
 }

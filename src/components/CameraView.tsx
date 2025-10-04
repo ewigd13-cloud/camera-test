@@ -9,7 +9,6 @@ interface CameraViewProps {
 export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, onStreamReady }) => {
   useEffect(() => {
     let stream: MediaStream | null = null;
-
     const setupCamera = async () => {
       try {
         const constraints = {
@@ -17,29 +16,22 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
           audio: false,
         };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
-
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-
-          // ✅ Firefox対策：明示的に再生を試みる
-          await videoRef.current.play().catch(err => {
-            console.warn('Video play failed:', err);
-          });
         }
-
         if (onStreamReady) {
           onStreamReady(stream);
         }
       } catch (err) {
-        console.error('Error accessing camera:', err);
-        alert('カメラにアクセスできませんでした。権限を許可しているか確認してください。');
+        console.error("Error accessing camera:", err);
+        alert("Could not access camera. Please ensure you have granted permission.");
       }
     };
 
     setupCamera();
 
     return () => {
-      // ✅ クリーンアップ：ストリームを停止
+      // Cleanup: stop all tracks on component unmount or when facingMode changes
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -52,9 +44,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
       autoPlay
       playsInline
       muted
-      className={`absolute top-0 left-0 w-full h-full object-cover ${
-        facingMode === 'user' ? 'transform scale-x-[-1]' : ''
-      }`}
+      className={`w-full h-full object-cover ${facingMode === 'user' ? 'transform scale-x-[-1]' : ''}`} // Mirror selfie view
       aria-label="Live camera feed"
     />
   );
