@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       }
     },
+    css: {
+      postcss: './postcss.config.cjs'
+    },
     build: {
       cssCodeSplit: true,
       rollupOptions: {

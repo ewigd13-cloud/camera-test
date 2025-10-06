@@ -3,6 +3,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
 import { CameraIcon, DownloadIcon, TimerIcon, FlashIcon, CloseIcon, InstallPwaIcon } from './components/Icons';
+import './index.css';
+
 
 // Type definition for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {

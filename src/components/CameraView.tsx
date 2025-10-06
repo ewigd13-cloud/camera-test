@@ -31,12 +31,15 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
     setupCamera();
 
     return () => {
-      // Cleanup: stop all tracks on component unmount or when facingMode changes
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
   }, [videoRef, facingMode, onStreamReady]);
+
+  const baseClass = 'w-full h-full object-cover';
+  const mirrorClass = facingMode === 'user' ? 'transform scale-x-[-1]' : '';
+  const combinedClass = `${baseClass} ${mirrorClass}`.trim();
 
   return (
     <video
@@ -44,7 +47,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
       autoPlay
       playsInline
       muted
-      className={`w-full h-full object-cover ${facingMode === 'user' ? 'transform scale-x-[-1]' : ''}`} // Mirror selfie view
+      className={combinedClass}
       aria-label="Live camera feed"
     />
   );
