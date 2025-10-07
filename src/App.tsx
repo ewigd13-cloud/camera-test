@@ -324,18 +324,21 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const canvas = overlayCanvasRef.current;
-    if (canvas && !imageSrc) {
-      const context = canvas.getContext('2d');
-      if (context) {
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
+  const canvas = overlayCanvasRef.current;
+  if (canvas && !imageSrc) {
+    const context = canvas.getContext('2d');
+    if (context) {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      document.fonts.ready.then(() => {
         context.clearRect(0, 0, canvas.width, canvas.height);
         drawWhiteboard(context, canvas.width, canvas.height, whiteboardTexts);
-      }
+      });
     }
-  }, [whiteboardTexts, imageSrc, whiteboardScale]);
+  }
+}, [whiteboardTexts, imageSrc, whiteboardScale]);
 
     useEffect(() => {
         if (imageSrc) return;
@@ -407,62 +410,62 @@ const App: React.FC = () => {
     
     }, []);
 
-  const capturePhoto = useCallback(() => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const mainEl = mainRef.current;
+  const capturePhoto = useCallback(async () => {
+  const canvas = canvasRef.current;
+  const video = videoRef.current;
+  const mainEl = mainRef.current;
 
-    if (canvas && video && video.readyState >= 2 && mainEl) {
-      const context = canvas.getContext('2d');
-      if (context) {
-        const targetAspectRatio = 4 / 3;
-        const videoWidth = video.videoWidth;
-        const videoHeight = video.videoHeight;
-        const videoAspectRatio = videoWidth / videoHeight;
+  if (canvas && video && video.readyState >= 2 && mainEl) {
+    const context = canvas.getContext('2d');
+    if (context) {
+      const targetAspectRatio = 4 / 3;
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      const videoAspectRatio = videoWidth / videoHeight;
 
-        let sWidth, sHeight, sx, sy;
+      let sWidth, sHeight, sx, sy;
 
-        if (videoAspectRatio > targetAspectRatio) {
-            sHeight = videoHeight;
-            sWidth = videoHeight * targetAspectRatio;
-            sx = (videoWidth - sWidth) / 2;
-            sy = 0;
-        } else {
-            sWidth = videoWidth;
-            sHeight = videoWidth / targetAspectRatio;
-            sx = 0;
-            sy = (videoHeight - sHeight) / 2;
-        }
-
-        canvas.width = sWidth;
-        canvas.height = sHeight;
-
-        context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-
-        context.setTransform(1, 0, 0, 1, 0, 0);
-
-        const baseBoardWidth = canvas.width * 0.3;
-        const baseBoardHeight = canvas.height * 0.25;
-        
-        const boardWidth = baseBoardWidth * whiteboardScale;
-        const boardHeight = baseBoardHeight * whiteboardScale;
-        
-        const mainRect = mainEl.getBoundingClientRect();
-        const scaleX = canvas.width / mainRect.width;
-        const scaleY = canvas.height / mainRect.height;
-
-        const boardLeftX = whiteboardPosition.x * scaleX;
-        const boardTopY = whiteboardPosition.y * scaleY;
-
-        context.save();
-        context.translate(boardLeftX, boardTopY);
-        drawWhiteboard(context, boardWidth, boardHeight, whiteboardTexts);
-        context.restore();
-        
-        setImageSrc(canvas.toDataURL('image/jpeg'));
+      if (videoAspectRatio > targetAspectRatio) {
+        sHeight = videoHeight;
+        sWidth = videoHeight * targetAspectRatio;
+        sx = (videoWidth - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = videoWidth;
+        sHeight = videoWidth / targetAspectRatio;
+        sx = 0;
+        sy = (videoHeight - sHeight) / 2;
       }
+
+      canvas.width = sWidth;
+      canvas.height = sHeight;
+
+      context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+      context.setTransform(1, 0, 0, 1, 0, 0);
+
+      const baseBoardWidth = canvas.width * 0.3;
+      const baseBoardHeight = canvas.height * 0.25;
+
+      const boardWidth = baseBoardWidth * whiteboardScale;
+      const boardHeight = baseBoardHeight * whiteboardScale;
+
+      const mainRect = mainEl.getBoundingClientRect();
+      const scaleX = canvas.width / mainRect.width;
+      const scaleY = canvas.height / mainRect.height;
+
+      const boardLeftX = whiteboardPosition.x * scaleX;
+      const boardTopY = whiteboardPosition.y * scaleY;
+
+      context.save();
+      context.translate(boardLeftX, boardTopY);
+      await document.fonts.ready; // ✅ ここが使えるようになる
+      drawWhiteboard(context, boardWidth, boardHeight, whiteboardTexts);
+      context.restore();
+
+      setImageSrc(canvas.toDataURL('image/jpeg'));
     }
-  }, [videoRef, whiteboardTexts, whiteboardScale, whiteboardPosition]);
+  }
+}, [videoRef, whiteboardTexts, whiteboardScale, whiteboardPosition]);
 
   const handleStreamReady = useCallback((stream: MediaStream) => {
     const track = stream.getVideoTracks()[0];

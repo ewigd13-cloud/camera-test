@@ -2,16 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ベースリセット */
+/* ✅ ローカルフォント定義（public/fonts に配置） */
+@font-face {
+  font-family: 'Noto Serif JP';
+  src: url('/camera/fonts/NotoSerifJP-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+}
+/* ✅ ベースリセット */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* フォントと背景 */
+/* ✅ フォントと背景設定 */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Noto Serif JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #f9f9f9;
   color: #333;
   line-height: 1.6;
@@ -20,10 +27,33 @@ body {
   overflow: hidden;
 }
 
-/* ルート要素 */
+/* ✅ ルート要素 */
 #root {
   height: 100vh;
   width: 100vw;
   padding: 0;
   margin: 0;
+}
+
+/* ✅ カウントダウン用オーバーレイ */
+.countdown-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 15rem;
+  font-weight: 700;
+  font-family: sans-serif;
+  -webkit-text-stroke: 4px black;
+  text-stroke: 4px black;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* ✅ マーカー風フォント強調 */
+.font-marker {
+  font-weight: 900;
 }

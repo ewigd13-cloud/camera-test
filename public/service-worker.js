@@ -1,14 +1,14 @@
 const CACHE_NAME = 'whiteboard-photo-booth-v2';
 const urlsToCache = [
   self.location.origin + '/camera/',
-  self.location.origin + '/camera/index.html',
   self.location.origin + '/camera/manifest.json',
-  self.location.origin + '/camera/assets/index--DJ-73WN.js',
-  self.location.origin + '/camera/assets/index-CTSoWR9A.css',
+  self.location.origin + '/camera/assets/index-BGSvQDTW.js',
+  self.location.origin + '/camera/assets/index-CqfW5-qc.css',
   self.location.origin + '/camera/icons/icon-192.png',
   self.location.origin + '/camera/icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&display=swap',
+  self.location.origin + '/camera/fonts/NotoSerifJP-VariableFont_wght.ttf', // ← ローカルフォント
 ];
+
 
 // インストール時にキャッシュ登録
 self.addEventListener('install', event => {
@@ -48,16 +48,14 @@ self.addEventListener('fetch', event => {
 
   // ページ遷移（navigate）は index.html を返す
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match(self.location.origin + '/camera/index.html')
-        .then(response => response || fetch(event.request))
-        .catch(err => {
-          console.error('Navigation fetch failed:', err);
-          return caches.match(self.location.origin + '/camera/index.html');
-        })
-    );
-    return;
-  }
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || caches.match(self.location.origin + '/camera/');
+    }).catch(() => caches.match(self.location.origin + '/camera/'))
+  );
+  return;
+}
+
 
   // 通常のリソース取得（JS/CSS/画像など）
   event.respondWith(
@@ -79,7 +77,7 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         }).catch(err => {
           console.error('Fetch failed:', err);
-          return caches.match(self.location.origin + '/camera/index.html');
+          return caches.match(self.location.origin + '/camera/');
         });
       });
     })

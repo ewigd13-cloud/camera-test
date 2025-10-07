@@ -8,28 +8,32 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: isProd ? '/camera/' : '/',
+
     server: {
       port: 3000,
       host: '0.0.0.0',
     },
+
     plugins: [react()],
+
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
+
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-      }
+      },
     },
+
     css: {
-      postcss: './postcss.config.cjs'
+      postcss: './postcss.config.cjs',
     },
+
     build: {
       cssCodeSplit: true,
-      rollupOptions: {
-        input: path.resolve(__dirname, 'index.html')
-      }
-    }
+      // ✅ rollupOptions.input は削除
+    },
   };
 });
