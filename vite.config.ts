@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
   return {
-    base: isProd ? '/camera/' : '/',
+    base: isProd ? '/camera-test/' : '/',
 
     server: {
       port: 3000,
