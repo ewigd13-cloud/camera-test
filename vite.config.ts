@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'Whiteboard Photo Booth',
           short_name: 'PhotoBooth',
-          start_url: '/camera/',
+          start_url: '/camera-test/',
           display: 'standalone',
           background_color: '#ffffff',
           icons: [
@@ -47,13 +47,13 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          navigateFallback: '/camera/',
+          navigateFallback: '/camera-test/',
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/.*\/camera\/.*\.(js|css|ttf|png|json)$/,
+              urlPattern: /^https:\/\/.*\/camera-test\/.*\.(js|css|ttf|png|json)$/,
               handler: 'CacheFirst',
               options: {
-                cacheName: 'camera-assets',
+                cacheName: 'camera-test-assets',
                 expiration: {
                   maxEntries: 50,
                   maxAgeSeconds: 60 * 60 * 24 * 30, // 30日

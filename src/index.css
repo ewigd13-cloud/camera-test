@@ -5,7 +5,7 @@
 /* ✅ ローカルフォント定義（public/fonts に配置） */
 @font-face {
   font-family: 'Noto Serif JP';
-  src: url('/camera-test/fonts/NotoSerifJP-VariableFont_wght.ttf') format('truetype');
+  src: url('/camera/fonts/NotoSerifJP-VariableFont_wght.ttf') format('truetype');
   font-weight: 400 900;
   font-style: normal;
 }
