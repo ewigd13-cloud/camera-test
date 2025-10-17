@@ -4,11 +4,18 @@ interface CameraViewProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   facingMode: 'user' | 'environment';
   onStreamReady?: (stream: MediaStream) => void;
+  onGoToGallery?: () => void; // ← 追加
 }
 
-export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, onStreamReady }) => {
+export const CameraView: React.FC<CameraViewProps> = ({
+  videoRef,
+  facingMode,
+  onStreamReady,
+  onGoToGallery,
+}) => {
   useEffect(() => {
     let stream: MediaStream | null = null;
+
     const setupCamera = async () => {
       try {
         const constraints = {
@@ -23,8 +30,8 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
           onStreamReady(stream);
         }
       } catch (err) {
-        console.error("Error accessing camera:", err);
-        alert("Could not access camera. Please ensure you have granted permission.");
+        console.error('Error accessing camera:', err);
+        alert('カメラにアクセスできませんでした。権限を確認してください。');
       }
     };
 
@@ -32,7 +39,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
 
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [videoRef, facingMode, onStreamReady]);
@@ -42,13 +49,23 @@ export const CameraView: React.FC<CameraViewProps> = ({ videoRef, facingMode, on
   const combinedClass = `${baseClass} ${mirrorClass}`.trim();
 
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted
-      className={combinedClass}
-      aria-label="Live camera feed"
-    />
+    <div className="relative w-full h-full">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={combinedClass}
+        aria-label="Live camera feed"
+      />
+      {onGoToGallery && (
+        <button
+          onClick={onGoToGallery}
+          className="absolute bottom-4 right-4 bg-white text-gray-800 px-4 py-2 rounded-md shadow-md hover:bg-gray-100 transition text-sm font-semibold"
+        >
+          保存した写真を見る
+        </button>
+      )}
+    </div>
   );
 };

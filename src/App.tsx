@@ -1,7 +1,13 @@
 
+// React & Hooks
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+
+// UI Components
 import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
+import { Gallery } from './components/Gallery';
+
+// Icons
 import {
   CameraIcon,
   DownloadIcon,
@@ -9,11 +15,11 @@ import {
   FlashIcon,
   CloseIcon,
   InstallPwaIcon,
+  GalleryIcon,
 } from './components/Icons';
-import { Gallery } from './components/Gallery';
-import { GalleryIcon } from './components/Icons';
-import './index.css';
 
+// Styles
+import './index.css';
 
 
 // Type definition for the BeforeInstallPromptEvent
