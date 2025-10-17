@@ -11,6 +11,7 @@ import {
   InstallPwaIcon,
 } from './components/Icons';
 import { Gallery } from './components/Gallery';
+import { GalleryIcon } from './components/Icons';
 import './index.css';
 
 
