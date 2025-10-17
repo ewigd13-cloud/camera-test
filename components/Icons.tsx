@@ -86,3 +86,9 @@ export const CheckCircleIcon: React.FC<{ className?: string }> = ({ className = 
         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
     </svg>
 );
+
+export const InstallPwaIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2v20m10-10H2" />
+  </svg>
+);
