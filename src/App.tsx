@@ -2,12 +2,16 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
-import { CameraIcon, DownloadIcon, TimerIcon, FlashIcon, CloseIcon, InstallPwaIcon } from './components/Icons';
-import './index.css';
-import { useState } from 'react';
-import StartView from './StartView';
-import CameraView from './CameraView';
+import {
+  CameraIcon,
+  DownloadIcon,
+  TimerIcon,
+  FlashIcon,
+  CloseIcon,
+  InstallPwaIcon,
+} from './components/Icons';
 import { Gallery } from './components/Gallery';
+import './index.css';
 
 
 
@@ -684,7 +688,7 @@ const App: React.FC = () => {
   );
 };
 
-         function App() {
+         function AppGallery() {
   const [currentView, setCurrentView] = useState<'start' | 'camera' | 'gallery'>('start');
 
   return (
