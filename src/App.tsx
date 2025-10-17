@@ -4,6 +4,11 @@ import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
 import { CameraIcon, DownloadIcon, TimerIcon, FlashIcon, CloseIcon, InstallPwaIcon } from './components/Icons';
 import './index.css';
+import { useState } from 'react';
+import StartView from './StartView';
+import CameraView from './CameraView';
+import { Gallery } from './components/Gallery';
+
 
 
 // Type definition for the BeforeInstallPromptEvent
@@ -678,5 +683,27 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+         function App() {
+  const [currentView, setCurrentView] = useState<'start' | 'camera' | 'gallery'>('start');
+
+  return (
+    <>
+      {currentView === 'start' && (
+        <StartView onStart={() => setCurrentView('camera')} />
+      )}
+      {currentView === 'camera' && (
+        <CameraView
+          onGoToGallery={() => setCurrentView('gallery')}
+        />
+      )}
+      {currentView === 'gallery' && (
+        <Gallery onClose={() => setCurrentView('camera')} />
+      )}
+    </>
+  );
+}
+
+
 
 export default App;
