@@ -708,23 +708,30 @@ const App: React.FC = () => {
 
          function AppGallery() {
   const [currentView, setCurrentView] = useState<'start' | 'camera' | 'gallery'>('start');
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <>
       {currentView === 'start' && (
         <StartView onStart={() => setCurrentView('camera')} />
       )}
+
       {currentView === 'camera' && (
         <CameraView
+          videoRef={videoRef}
+          facingMode="environment"
           onGoToGallery={() => setCurrentView('gallery')}
+          // 他にも必要な props があれば追加
         />
       )}
+
       {currentView === 'gallery' && (
         <Gallery onClose={() => setCurrentView('camera')} />
       )}
     </>
   );
 }
+
 
 
 
