@@ -8,8 +8,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy:test": "gh-pages -d dist -b gh-pages -r https://github.com/ewigd13-cloud/camera-test.git"
-}
-
   },
   "dependencies": {
     "react": "^19.2.0",

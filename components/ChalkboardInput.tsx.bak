@@ -48,8 +48,7 @@ const ListSelectionModal: React.FC<{
     return (
         <div 
             className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
-            // Fix: Wrapped `onClose` in an arrow function to prevent passing the event object.
-            onClick={() => onClose()}
+            onClick={onClose}
             aria-modal="true"
             role="dialog"
         >
@@ -59,8 +58,7 @@ const ListSelectionModal: React.FC<{
             >
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-gray-800">項目を選択</h3>
-                    {/* Fix: Wrapped `onClose` in an arrow function to prevent passing the event object. */}
-                    <button onClick={() => onClose()} className="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100" aria-label="Close modal">
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100" aria-label="Close modal">
                         <CloseIcon />
                     </button>
                 </div>
@@ -132,8 +130,7 @@ const ConfirmationModal: React.FC<{
   return (
     <div 
         className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
-        // Fix: Wrapped `onCancel` in an arrow function to prevent passing the event object.
-        onClick={() => onCancel()}
+        onClick={onCancel}
         aria-modal="true"
         role="dialog"
     >
@@ -145,16 +142,14 @@ const ConfirmationModal: React.FC<{
             <p className="text-gray-600 mb-6">{message}</p>
             <div className="flex justify-end gap-4">
                 <button 
-                    // Fix: Wrapped `onCancel` in an arrow function to prevent passing the event object.
-                    onClick={() => onCancel()} 
+                    onClick={onCancel} 
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
                     disabled={isProcessing}
                 >
                     キャンセル
                 </button>
                 <button 
-                    // Fix: Wrapped `onConfirm` in an arrow function to prevent passing the event object.
-                    onClick={() => onConfirm()}
+                    onClick={onConfirm}
                     className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-400 disabled:cursor-wait"
                     disabled={isProcessing}
                 >
