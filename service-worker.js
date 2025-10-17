@@ -3,7 +3,7 @@ const urlsToCache = [
   self.location.origin + '/camera-test/',
   self.location.origin + '/camera-test/manifest.json',
   self.location.origin + '/camera-test/assets/index-tnrYw67E.js',
-  self.location.origin + '/camera-test/assets/index-DgIfnjQ_.css',
+  self.location.origin + '/camera-test/assets/index-yZjIh5FW.css',
   self.location.origin + '/camera-test/icons/icon-192.png',
   self.location.origin + '/camera-test/icons/icon-512.png',
   self.location.origin + '/camera-test/fonts/NotoSerifJP-VariableFont_wght.ttf',
