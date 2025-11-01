@@ -1,21 +1,9 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
-import { CameraIcon, DownloadIcon, TimerIcon, FlashIcon, CloseIcon, InstallPwaIcon } from './components/Icons';
-import './index.css';
-
-
-// Type definition for the BeforeInstallPromptEvent
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
+import { CameraIcon, TimerIcon, FlashIcon, CloseIcon, GalleryIcon } from './components/Icons';
+import { Gallery } from './components/Gallery';
+import { initDB, addPhoto } from './db';
 
 const NUM_ROWS = 5;
 const NUM_COLS = 2;
@@ -183,9 +171,31 @@ const drawWhiteboard = (context: CanvasRenderingContext2D, boardWidth: number, b
     }
 };
 
+const AppNotification: React.FC<{ message: string, show: boolean, type?: 'success' | 'error' }> = ({ message, show, type = 'success' }) => {
+    const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+    return (
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 z-50 ${bgColor} ${show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
+            {message}
+        </div>
+    );
+};
+
+const getAndIncrementCounter = (baseFilename: string): number => {
+    try {
+        const counters = JSON.parse(localStorage.getItem('photoCounters') || '{}');
+        const currentCount = counters[baseFilename] || 0;
+        const newCount = currentCount + 1;
+        counters[baseFilename] = newCount;
+        localStorage.setItem('photoCounters', JSON.stringify(counters));
+        return newCount;
+    } catch (e) {
+        console.error("Failed to update photo counter in localStorage", e);
+        return 1; // Fallback
+    }
+};
 
 const App: React.FC = () => {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [view, setView] = useState<'camera' | 'gallery'>('camera');
   const [whiteboardTexts, setWhiteboardTexts] = useState<string[]>(() => {
     const texts = Array(NUM_ROWS * NUM_COLS).fill('');
     texts[0] = '設備';
@@ -203,7 +213,6 @@ const App: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
-  const downloadCounterRef = useRef<Record<string, number>>({});
   const audioContextRef = useRef<AudioContext | null>(null);
   const [isTimerEnabled, setIsTimerEnabled] = useState<boolean>(false);
   const [isFlashEnabled, setIsFlashEnabled] = useState<boolean>(false);
@@ -218,35 +227,13 @@ const App: React.FC = () => {
   const mainRef = useRef<HTMLElement>(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    setInstallPrompt(null);
-  };
+  const [notification, setNotification] = useState<{ message: string; show: boolean; type: 'success' | 'error' }>({ message: '', show: false, type: 'success' });
+  const notificationTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    initDB().catch(err => console.error("Failed to initialize database", err));
+
     const initAudio = () => {
       if (!audioContextRef.current) {
         try {
@@ -266,6 +253,16 @@ const App: React.FC = () => {
       window.removeEventListener('touchstart', initAudio);
     };
   }, []);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+    }
+    setNotification({ message, show: true, type });
+    notificationTimerRef.current = window.setTimeout(() => {
+        setNotification({ message: '', show: false, type: 'success' });
+    }, 2000);
+  };
 
   const playTickSound = useCallback(() => {
     if (!audioContextRef.current) return;
@@ -324,25 +321,20 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-  const canvas = overlayCanvasRef.current;
-  if (canvas && !imageSrc) {
-    const context = canvas.getContext('2d');
-    if (context) {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-
-      document.fonts.ready.then(() => {
+    const canvas = overlayCanvasRef.current;
+    if (canvas) {
+      const context = canvas.getContext('2d');
+      if (context) {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
         context.clearRect(0, 0, canvas.width, canvas.height);
         drawWhiteboard(context, canvas.width, canvas.height, whiteboardTexts);
-      });
+      }
     }
-  }
-}, [whiteboardTexts, imageSrc, whiteboardScale]);
+  }, [whiteboardTexts, whiteboardScale]);
 
     useEffect(() => {
-        if (imageSrc) return;
-
         const mainEl = mainRef.current;
         const overlayEl = overlayCanvasRef.current;
         
@@ -360,7 +352,7 @@ const App: React.FC = () => {
 
         return () => clearTimeout(timer);
 
-    }, [imageSrc, whiteboardScale]);
+    }, [whiteboardScale]);
 
     const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
@@ -410,62 +402,82 @@ const App: React.FC = () => {
     
     }, []);
 
-  const capturePhoto = useCallback(async () => {
-  const canvas = canvasRef.current;
-  const video = videoRef.current;
-  const mainEl = mainRef.current;
+  const captureAndSavePhoto = useCallback(async () => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const mainEl = mainRef.current;
 
-  if (canvas && video && video.readyState >= 2 && mainEl) {
-    const context = canvas.getContext('2d');
-    if (context) {
-      const targetAspectRatio = 4 / 3;
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      const videoAspectRatio = videoWidth / videoHeight;
+    if (canvas && video && video.readyState >= 2 && mainEl) {
+      const context = canvas.getContext('2d');
+      if (context) {
+        const targetAspectRatio = 4 / 3;
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const videoAspectRatio = videoWidth / videoHeight;
 
-      let sWidth, sHeight, sx, sy;
+        let sWidth, sHeight, sx, sy;
 
-      if (videoAspectRatio > targetAspectRatio) {
-        sHeight = videoHeight;
-        sWidth = videoHeight * targetAspectRatio;
-        sx = (videoWidth - sWidth) / 2;
-        sy = 0;
-      } else {
-        sWidth = videoWidth;
-        sHeight = videoWidth / targetAspectRatio;
-        sx = 0;
-        sy = (videoHeight - sHeight) / 2;
+        if (videoAspectRatio > targetAspectRatio) {
+            sHeight = videoHeight;
+            sWidth = videoHeight * targetAspectRatio;
+            sx = (videoWidth - sWidth) / 2;
+            sy = 0;
+        } else {
+            sWidth = videoWidth;
+            sHeight = videoWidth / targetAspectRatio;
+            sx = 0;
+            sy = (videoHeight - sHeight) / 2;
+        }
+
+        canvas.width = sWidth;
+        canvas.height = sHeight;
+
+        context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+        const baseBoardWidth = canvas.width * 0.3;
+        const baseBoardHeight = canvas.height * 0.25;
+        
+        const boardWidth = baseBoardWidth * whiteboardScale;
+        const boardHeight = baseBoardHeight * whiteboardScale;
+        
+        const mainRect = mainEl.getBoundingClientRect();
+        const scaleX = canvas.width / mainRect.width;
+        const scaleY = canvas.height / mainRect.height;
+
+        const boardLeftX = whiteboardPosition.x * scaleX;
+        const boardTopY = whiteboardPosition.y * scaleY;
+
+        context.save();
+        context.translate(boardLeftX, boardTopY);
+        drawWhiteboard(context, boardWidth, boardHeight, whiteboardTexts);
+        context.restore();
+        
+        const dataUrl = canvas.toDataURL('image/jpeg');
+
+        const today = new Date();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const dateString = `${month}.${day}`;
+        const text1 = whiteboardTexts[1] || '';
+        const text2 = whiteboardTexts[3] || '';
+        const baseFilename = `${dateString}${text1}${text2}`;
+        
+        const count = getAndIncrementCounter(baseFilename);
+        const counterString = String(count).padStart(3, '0');
+        const finalFilename = `${baseFilename}${counterString}.jpg`;
+        
+        try {
+            await addPhoto(dataUrl, finalFilename);
+            showNotification("写真を保存しました");
+        } catch (error) {
+            console.error("Failed to save photo", error);
+            showNotification("写真の保存に失敗しました", 'error');
+        }
       }
-
-      canvas.width = sWidth;
-      canvas.height = sHeight;
-
-      context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-      context.setTransform(1, 0, 0, 1, 0, 0);
-
-      const baseBoardWidth = canvas.width * 0.3;
-      const baseBoardHeight = canvas.height * 0.25;
-
-      const boardWidth = baseBoardWidth * whiteboardScale;
-      const boardHeight = baseBoardHeight * whiteboardScale;
-
-      const mainRect = mainEl.getBoundingClientRect();
-      const scaleX = canvas.width / mainRect.width;
-      const scaleY = canvas.height / mainRect.height;
-
-      const boardLeftX = whiteboardPosition.x * scaleX;
-      const boardTopY = whiteboardPosition.y * scaleY;
-
-      context.save();
-      context.translate(boardLeftX, boardTopY);
-      await document.fonts.ready; // ✅ ここが使えるようになる
-      drawWhiteboard(context, boardWidth, boardHeight, whiteboardTexts);
-      context.restore();
-
-      setImageSrc(canvas.toDataURL('image/jpeg'));
     }
-  }
-}, [videoRef, whiteboardTexts, whiteboardScale, whiteboardPosition]);
+  }, [videoRef, whiteboardTexts, whiteboardScale, whiteboardPosition]);
 
   const handleStreamReady = useCallback((stream: MediaStream) => {
     const track = stream.getVideoTracks()[0];
@@ -495,9 +507,9 @@ const App: React.FC = () => {
   const triggerCapture = useCallback(() => {
     setIsCapturing(true);
     playShutterSound();
-    capturePhoto();
+    captureAndSavePhoto();
     setTimeout(() => setIsCapturing(false), 100);
-  }, [playShutterSound, capturePhoto]);
+  }, [playShutterSound, captureAndSavePhoto]);
 
 
   useEffect(() => {
@@ -529,74 +541,30 @@ const App: React.FC = () => {
     }
   };
 
-  const retakePhoto = () => {
-    setImageSrc(null);
-  };
-
-  const downloadPhoto = () => {
-    if (imageSrc) {
-      const today = new Date();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const dateString = `${month}.${day}`;
-
-      const text1 = whiteboardTexts[1] || '';
-      const text2 = whiteboardTexts[3] || '';
-
-      const baseFilename = `${dateString}${text1}${text2}`;
-
-      const currentCount = downloadCounterRef.current[baseFilename] || 0;
-      const newCount = currentCount + 1;
-      downloadCounterRef.current[baseFilename] = newCount;
-      
-      const counterString = String(newCount).padStart(3, '0');
-
-      const finalFilename = `${baseFilename}${counterString}.jpg`;
-      
-      const link = document.createElement('a');
-      link.href = imageSrc;
-      link.download = finalFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
   const uiDisabled = isCountingDown || isCapturing;
+
+  if (view === 'gallery') {
+    return <Gallery onClose={() => setView('camera')} />;
+  }
 
   return (
     <div className="bg-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
-        <div className={`w-full max-w-4xl mx-auto flex ${imageSrc ? 'flex-col' : 'flex-row items-center'} gap-4 md:gap-8`}>
-            <main ref={mainRef} className={`aspect-[4/3] bg-black rounded-lg shadow-2xl overflow-hidden relative ${imageSrc ? 'w-full' : 'flex-1'}`}>
-                {installPrompt && !imageSrc && (
-                    <button 
-                        onClick={handleInstallClick}
-                        className="absolute top-4 right-4 z-20 bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50"
-                        aria-label="アプリをインストール"
-                        title="アプリをインストール"
-                    >
-                        <InstallPwaIcon className="h-6 w-6" />
-                    </button>
-                )}
-                {imageSrc ? (
-                    <img src={imageSrc} alt="撮影した写真" className="w-full h-full object-contain" />
-                ) : (
-                    <>
-                        <CameraView videoRef={videoRef} facingMode="environment" onStreamReady={handleStreamReady} />
-                        <canvas
-                            ref={overlayCanvasRef}
-                            onMouseDown={handleDragStart}
-                            onTouchStart={handleDragStart}
-                            className="absolute top-0 left-0 opacity-80 cursor-move touch-none"
-                            style={{
-                                width: `${30 * whiteboardScale}%`,
-                                height: `${25 * whiteboardScale}%`,
-                                transform: `translate(${whiteboardPosition.x}px, ${whiteboardPosition.y}px)`,
-                            }}
-                            aria-hidden="true"
-                        />
-                    </>
-                )}
+      <AppNotification message={notification.message} show={notification.show} type={notification.type} />
+        <div className="w-full max-w-4xl mx-auto flex flex-row items-center gap-4 md:gap-8">
+            <main ref={mainRef} className="aspect-[4/3] bg-black rounded-lg shadow-2xl overflow-hidden relative flex-1">
+                <CameraView videoRef={videoRef} facingMode="environment" onStreamReady={handleStreamReady} />
+                <canvas
+                    ref={overlayCanvasRef}
+                    onMouseDown={handleDragStart}
+                    onTouchStart={handleDragStart}
+                    className="absolute top-0 left-0 opacity-80 cursor-move touch-none"
+                    style={{
+                        width: `${30 * whiteboardScale}%`,
+                        height: `${25 * whiteboardScale}%`,
+                        transform: `translate(${whiteboardPosition.x}px, ${whiteboardPosition.y}px)`,
+                    }}
+                    aria-hidden="true"
+                />
                 {isCountingDown && (
                     <div className="countdown-overlay">
                         <span>{countdown !== null && countdown <= 5 ? countdown : ''}</span>
@@ -605,75 +573,70 @@ const App: React.FC = () => {
                 <canvas ref={canvasRef} className="hidden"></canvas>
             </main>
 
-            {!imageSrc && (
-                <div className="flex flex-col items-center justify-center gap-4 w-20">
-                    {isCountingDown ? (
-                        <button onClick={handleCancelCountdown} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50" aria-label="タイマーをキャンセル">
-                            <CloseIcon className="h-6 w-6 md:h-8 md:w-8" />
-                        </button>
-                    ) : (
-                        <button onClick={handleCapture} className="bg-red-600 hover:bg-red-700 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50 disabled:bg-red-900 disabled:cursor-not-allowed" aria-label="写真を撮る" disabled={uiDisabled}>
-                            <CameraIcon className="h-6 w-6 md:h-8 md:w-8" />
-                        </button>
-                    )}
-                    
-                    {hasFlash && (
-                      <button 
-                          onClick={toggleFlash} 
-                          title={isFlashEnabled ? "フラッシュ OFF" : "フラッシュ ON"} 
-                          className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isFlashEnabled ? 'ring-4 ring-yellow-400' : ''}`} 
-                          aria-label="フラッシュの切り替え"
-                          disabled={uiDisabled}
-                      >
-                          <FlashIcon className="h-5 w-5 md:h-6 md:w-6" />
-                      </button>
-                    )}
-
-                    <button 
-                        onClick={() => setIsTimerEnabled(!isTimerEnabled)} 
-                        title={isTimerEnabled ? "タイマー OFF" : "10秒タイマー ON"} 
-                        className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isTimerEnabled ? 'ring-4 ring-blue-500' : ''}`} 
-                        aria-label="タイマーの切り替え"
-                        disabled={uiDisabled}
-                    >
-                        <TimerIcon className="h-5 w-5 md:h-6 md:w-6" />
+            <div className="flex flex-col items-center justify-center gap-4 w-20">
+                {isCountingDown ? (
+                    <button onClick={handleCancelCountdown} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50" aria-label="タイマーをキャンセル">
+                        <CloseIcon className="h-6 w-6 md:h-8 md:w-8" />
                     </button>
-                </div>
-            )}
+                ) : (
+                    <button onClick={handleCapture} className="bg-red-600 hover:bg-red-700 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50 disabled:bg-red-900 disabled:cursor-not-allowed" aria-label="写真を撮る" disabled={uiDisabled}>
+                        <CameraIcon className="h-6 w-6 md:h-8 md:w-8" />
+                    </button>
+                )}
+                
+                {hasFlash && (
+                  <button 
+                      onClick={toggleFlash} 
+                      title={isFlashEnabled ? "フラッシュ OFF" : "フラッシュ ON"} 
+                      className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isFlashEnabled ? 'ring-4 ring-yellow-400' : ''}`} 
+                      aria-label="フラッシュの切り替え"
+                      disabled={uiDisabled}
+                  >
+                      <FlashIcon className="h-5 w-5 md:h-6 md:w-6" />
+                  </button>
+                )}
+
+                <button 
+                    onClick={() => setIsTimerEnabled(!isTimerEnabled)} 
+                    title={isTimerEnabled ? "タイマー OFF" : "10秒タイマー ON"} 
+                    className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isTimerEnabled ? 'ring-4 ring-blue-500' : ''}`} 
+                    aria-label="タイマーの切り替え"
+                    disabled={uiDisabled}
+                >
+                    <TimerIcon className="h-5 w-5 md:h-6 md:w-6" />
+                </button>
+                
+                <button 
+                    onClick={() => setView('gallery')}
+                    title="ギャラリー" 
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed"
+                    aria-label="ギャラリーを開く"
+                    disabled={uiDisabled}
+                >
+                    <GalleryIcon className="h-5 w-5 md:h-6 md:w-6" />
+                </button>
+            </div>
         </div>
 
-        {!imageSrc && (
-            <div className="w-full max-w-4xl mx-auto mt-4">
-                <label htmlFor="whiteboard-scale" className="block text-sm font-medium text-white mb-2 text-center">
-                    ホワイトボードのサイズ調整
-                </label>
-                <input
-                    id="whiteboard-scale"
-                    type="range"
-                    min="0.5"
-                    max="1.5"
-                    step="0.05"
-                    value={whiteboardScale}
-                    onChange={(e) => setWhiteboardScale(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                    aria-label="ホワイトボードのサイズ調整"
-                />
-            </div>
-        )}
+        <div className="w-full max-w-4xl mx-auto mt-4">
+            <label htmlFor="whiteboard-scale" className="block text-sm font-medium text-white mb-2 text-center">
+                ホワイトボードのサイズ調整
+            </label>
+            <input
+                id="whiteboard-scale"
+                type="range"
+                min="0.5"
+                max="1.5"
+                step="0.05"
+                value={whiteboardScale}
+                onChange={(e) => setWhiteboardScale(parseFloat(e.target.value))}
+                className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                aria-label="ホワイトボードのサイズ調整"
+            />
+        </div>
 
         <footer className="mt-6 w-full max-w-4xl mx-auto">
-            {imageSrc ? (
-                <div className="flex justify-center items-center gap-4">
-                    <button onClick={retakePhoto} className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
-                        再撮影
-                    </button>
-                    <button onClick={downloadPhoto} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
-                        <DownloadIcon /> ダウンロード
-                    </button>
-                </div>
-            ) : (
-                <WhiteboardGridInput texts={whiteboardTexts} setTexts={setWhiteboardTexts} />
-            )}
+            <WhiteboardGridInput texts={whiteboardTexts} setTexts={setWhiteboardTexts} />
         </footer>
     </div>
   );
