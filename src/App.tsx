@@ -4,6 +4,7 @@ import { WhiteboardGridInput } from './components/ChalkboardInput';
 import { CameraIcon, TimerIcon, FlashIcon, CloseIcon, GalleryIcon } from './components/Icons';
 import { Gallery } from './components/Gallery';
 import { initDB, addPhoto } from './db';
+import './index.css';
 
 const NUM_ROWS = 5;
 const NUM_COLS = 2;
