@@ -612,7 +612,7 @@ const App: React.FC = () => {
                     title="ギャラリー" 
                     className="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed"
                     aria-label="ギャラリーを開く"
-                    disabled={uiDisabled}
+                    disabled={fase}
                 >
                     <GalleryIcon className="h-5 w-5 md:h-6 md:w-6" />
                 </button>
