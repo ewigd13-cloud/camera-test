@@ -47,7 +47,7 @@ const ConfirmationModal: React.FC<{
   };
 
 
-export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
+const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -180,3 +180,5 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     </div>
   );
 };
+
+export default Gallery;

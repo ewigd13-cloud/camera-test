@@ -544,103 +544,127 @@ const App: React.FC = () => {
 
   const uiDisabled = isCountingDown || isCapturing;
 
-  if (view === 'gallery') {
-    return <Gallery onClose={() => setView('camera')} />;
-  }
+return (
+  <>
+    {view === 'gallery' ? (
+      <Gallery onClose={() => setView('camera')} />
+    ) : (
+      <div className="bg-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
+        <AppNotification message={notification.message} show={notification.show} type={notification.type} />
 
-  return (
-    <div className="bg-gray-800 min-h-screen flex flex-col items-center justify-center p-4">
-      <AppNotification message={notification.message} show={notification.show} type={notification.type} />
         <div className="w-full max-w-4xl mx-auto flex flex-row items-center gap-4 md:gap-8">
-            <main ref={mainRef} className="aspect-[4/3] bg-black rounded-lg shadow-2xl overflow-hidden relative flex-1">
-                <CameraView videoRef={videoRef} facingMode="environment" onStreamReady={handleStreamReady} />
-                <canvas
-                    ref={overlayCanvasRef}
-                    onMouseDown={handleDragStart}
-                    onTouchStart={handleDragStart}
-                    className="absolute top-0 left-0 opacity-80 cursor-move touch-none"
-                    style={{
-                        width: `${30 * whiteboardScale}%`,
-                        height: `${25 * whiteboardScale}%`,
-                        transform: `translate(${whiteboardPosition.x}px, ${whiteboardPosition.y}px)`,
-                    }}
-                    aria-hidden="true"
-                />
-                {isCountingDown && (
-                    <div className="countdown-overlay">
-                        <span>{countdown !== null && countdown <= 5 ? countdown : ''}</span>
-                    </div>
-                )}
-                <canvas ref={canvasRef} className="hidden"></canvas>
-            </main>
+          <main
+            ref={mainRef}
+            className="aspect-[4/3] bg-black rounded-lg shadow-2xl overflow-hidden relative flex-1"
+          >
+            <CameraView videoRef={videoRef} facingMode="environment" onStreamReady={handleStreamReady} />
 
-            <div className="flex flex-col items-center justify-center gap-4 w-20">
-                {isCountingDown ? (
-                    <button onClick={handleCancelCountdown} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50" aria-label="タイマーをキャンセル">
-                        <CloseIcon className="h-6 w-6 md:h-8 md:w-8" />
-                    </button>
-                ) : (
-                    <button onClick={handleCapture} className="bg-red-600 hover:bg-red-700 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50 disabled:bg-red-900 disabled:cursor-not-allowed" aria-label="写真を撮る" disabled={uiDisabled}>
-                        <CameraIcon className="h-6 w-6 md:h-8 md:w-8" />
-                    </button>
-                )}
-                
-                {hasFlash && (
-                  <button 
-                      onClick={toggleFlash} 
-                      title={isFlashEnabled ? "フラッシュ OFF" : "フラッシュ ON"} 
-                      className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isFlashEnabled ? 'ring-4 ring-yellow-400' : ''}`} 
-                      aria-label="フラッシュの切り替え"
-                      disabled={uiDisabled}
-                  >
-                      <FlashIcon className="h-5 w-5 md:h-6 md:w-6" />
-                  </button>
-                )}
+            <canvas
+              ref={overlayCanvasRef}
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+              className="absolute top-0 left-0 opacity-80 cursor-move touch-none"
+              style={{
+                width: `${30 * whiteboardScale}%`,
+                height: `${25 * whiteboardScale}%`,
+                transform: `translate(${whiteboardPosition.x}px, ${whiteboardPosition.y}px)`,
+              }}
+              aria-hidden="true"
+            />
 
-                <button 
-                    onClick={() => setIsTimerEnabled(!isTimerEnabled)} 
-                    title={isTimerEnabled ? "タイマー OFF" : "10秒タイマー ON"} 
-                    className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${isTimerEnabled ? 'ring-4 ring-blue-500' : ''}`} 
-                    aria-label="タイマーの切り替え"
-                    disabled={uiDisabled}
-                >
-                    <TimerIcon className="h-5 w-5 md:h-6 md:w-6" />
-                </button>
-                
-                <button 
-                    onClick={() => setView('gallery')}
-                    title="ギャラリー" 
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    aria-label="ギャラリーを開く"
-                    disabled={false}
-                >
-                    <GalleryIcon className="h-5 w-5 md:h-6 md:w-6" />
-                </button>
-            </div>
+            {isCountingDown && (
+              <div className="countdown-overlay">
+                <span>{countdown !== null && countdown <= 5 ? countdown : ''}</span>
+              </div>
+            )}
+
+            <canvas ref={canvasRef} className="hidden"></canvas>
+          </main>
+
+          <div className="flex flex-col items-center justify-center gap-4 w-20">
+            {isCountingDown ? (
+              <button
+                onClick={handleCancelCountdown}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50"
+                aria-label="タイマーをキャンセル"
+              >
+                <CloseIcon className="h-6 w-6 md:h-8 md:w-8" />
+              </button>
+            ) : (
+              <button
+                onClick={handleCapture}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold p-3 md:p-4 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50 disabled:bg-red-900 disabled:cursor-not-allowed"
+                aria-label="写真を撮る"
+                disabled={uiDisabled}
+              >
+                <CameraIcon className="h-6 w-6 md:h-8 md:w-8" />
+              </button>
+            )}
+
+            {hasFlash && (
+              <button
+                onClick={toggleFlash}
+                title={isFlashEnabled ? 'フラッシュ OFF' : 'フラッシュ ON'}
+                className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${
+                  isFlashEnabled ? 'ring-4 ring-yellow-400' : ''
+                }`}
+                aria-label="フラッシュの切り替え"
+                disabled={uiDisabled}
+              >
+                <FlashIcon className="h-5 w-5 md:h-6 md:w-6" />
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsTimerEnabled(!isTimerEnabled)}
+              title={isTimerEnabled ? 'タイマー OFF' : '10秒タイマー ON'}
+              className={`bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed ${
+                isTimerEnabled ? 'ring-4 ring-blue-500' : ''
+              }`}
+              aria-label="タイマーの切り替え"
+              disabled={uiDisabled}
+            >
+              <TimerIcon className="h-5 w-5 md:h-6 md:w-6" />
+            </button>
+
+            <button
+              onClick={() => setView('gallery')}
+              title="ギャラリー"
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold p-3 md:p-4 rounded-full transition-all transform hover:scale-105 shadow-lg disabled:bg-gray-800 disabled:cursor-not-allowed"
+              aria-label="ギャラリーを開く"
+              disabled={false}
+            >
+              <GalleryIcon className="h-5 w-5 md:h-6 md:w-6" />
+            </button>
+          </div>
         </div>
 
         <div className="w-full max-w-4xl mx-auto mt-4">
-            <label htmlFor="whiteboard-scale" className="block text-sm font-medium text-white mb-2 text-center">
-                ホワイトボードのサイズ調整
-            </label>
-            <input
-                id="whiteboard-scale"
-                type="range"
-                min="0.5"
-                max="1.5"
-                step="0.05"
-                value={whiteboardScale}
-                onChange={(e) => setWhiteboardScale(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                aria-label="ホワイトボードのサイズ調整"
-            />
+          <label
+            htmlFor="whiteboard-scale"
+            className="block text-sm font-medium text-white mb-2 text-center"
+          >
+            ホワイトボードのサイズ調整
+          </label>
+          <input
+            id="whiteboard-scale"
+            type="range"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+            value={whiteboardScale}
+            onChange={(e) => setWhiteboardScale(parseFloat(e.target.value))}
+            className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            aria-label="ホワイトボードのサイズ調整"
+          />
         </div>
 
         <footer className="mt-6 w-full max-w-4xl mx-auto">
-            <WhiteboardGridInput texts={whiteboardTexts} setTexts={setWhiteboardTexts} />
+          <WhiteboardGridInput texts={whiteboardTexts} setTexts={setWhiteboardTexts} />
         </footer>
-    </div>
-  );
-};
+      </div>
+    )}
+  </>
+);
 
 export default App;
