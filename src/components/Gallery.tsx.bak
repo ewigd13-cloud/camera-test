@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PhotoRecord, getAllPhotos, deletePhotos } from '../db';
 import { ArrowLeftIcon, TrashIcon, DownloadIcon, CheckCircleIcon } from './Icons';
-import { PhotoModal } from './PhotoModal';
 
 interface GalleryProps {
   onClose: () => void;
@@ -48,12 +47,11 @@ const ConfirmationModal: React.FC<{
   };
 
 
-export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
+const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [viewingPhoto, setViewingPhoto] = useState<PhotoRecord | null>(null);
 
   const fetchPhotos = useCallback(async () => {
     try {
@@ -80,31 +78,6 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     }
     setSelectedIds(newSelectedIds);
   };
-
-  const handlePhotoClick = (photo: PhotoRecord) => {
-    // If the photo is the only one selected, and it's tapped again, open the viewer.
-    if (selectedIds.size === 1 && selectedIds.has(photo.id)) {
-      setViewingPhoto(photo);
-    } else {
-      // Otherwise, just toggle the selection for this photo.
-      toggleSelection(photo.id);
-    }
-  };
-
-  const handleNavigate = (direction: 'prev' | 'next') => {
-    if (!viewingPhoto) return;
-    const currentIndex = photos.findIndex(p => p.id === viewingPhoto.id);
-    if (currentIndex === -1) return;
-
-    let nextIndex;
-    if (direction === 'next') {
-        nextIndex = (currentIndex + 1) % photos.length;
-    } else {
-        nextIndex = (currentIndex - 1 + photos.length) % photos.length;
-    }
-    setViewingPhoto(photos[nextIndex]);
-  };
-
 
   const handleSelectAll = () => {
     if (selectedIds.size === photos.length) {
