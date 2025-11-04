@@ -149,6 +149,14 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   };
 
   const hasSelection = selectedIds.size > 0;
+
+  {viewingPhoto && (
+  <PhotoModal
+    photo={viewingPhoto}
+    onClose={() => setViewingPhoto(null)}
+    onNavigate={handleNavigate}
+  />
+)}
   
   return (
     <div className="fixed inset-0 bg-gray-800 z-50 flex flex-col p-4 text-white">
