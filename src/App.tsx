@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CameraView } from './components/CameraView';
 import { WhiteboardGridInput } from './components/ChalkboardInput';
 import { CameraIcon, TimerIcon, FlashIcon, CloseIcon, GalleryIcon } from './components/Icons';
-import { Gallery } from './components/Gallery';
+import Gallery from './components/Gallery';
 import { initDB, addPhoto } from './db';
 import './index.css';
 
@@ -557,7 +557,21 @@ return (
             ref={mainRef}
             className="aspect-[4/3] bg-black rounded-lg shadow-2xl overflow-hidden relative flex-1"
           >
+
             <CameraView videoRef={videoRef} facingMode="environment" onStreamReady={handleStreamReady} />
+
+{installPrompt && !imageSrc && (
+                    <button 
+                        onClick={handleInstallClick}
+                        className="absolute top-4 right-4 z-20 bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-full transition-transform transform hover:scale-105 shadow-lg ring-4 ring-white ring-opacity-25 focus:outline-none focus:ring-opacity-50"
+                        aria-label="アプリをインストール"
+                        title="アプリをインストール"
+                    >
+                        <InstallPwaIcon className="h-6 w-6" />
+                    </button>
+                )}
+
+
 
             <canvas
               ref={overlayCanvasRef}
@@ -665,6 +679,8 @@ return (
       </div>
     )}
   </>
-);
+ );
+};
+
 
 export default App;
