@@ -8,45 +8,44 @@ interface GalleryProps {
 }
 
 const ConfirmationModal: React.FC<{
-    isOpen: boolean;
-    message: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-  }> = ({ isOpen, message, onConfirm, onCancel }) => {
-    if (!isOpen) return null;
-  
-    return (
-      <div 
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4"
-          onClick={onCancel}
-          aria-modal="true"
-          role="dialog"
-      >
-          <div 
-              className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-          >
-              <h3 className="text-lg font-bold text-gray-800 mb-4">確認</h3>
-              <p className="text-gray-600 mb-6">{message}</p>
-              <div className="flex justify-end gap-4">
-                  <button 
-                      onClick={onCancel} 
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                  >
-                      キャンセル
-                  </button>
-                  <button 
-                      onClick={onConfirm}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  >
-                      削除
-                  </button>
-              </div>
-          </div>
-      </div>
-    );
-  };
+  isOpen: boolean;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ isOpen, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
 
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4"
+      onClick={onCancel}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold text-gray-800 mb-4">確認</h3>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            削除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
@@ -82,14 +81,20 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   };
 
   const handlePhotoClick = (photo: PhotoRecord) => {
-    // If the photo is the only one selected, and it's tapped again, open the viewer.
-    if (selectedIds.size === 1 && selectedIds.has(photo.id)) {
-      setViewingPhoto(photo);
-    } else {
-      // Otherwise, just toggle the selection for this photo.
-      toggleSelection(photo.id);
-    }
+    toggleSelection(photo.id);
   };
+
+  useEffect(() => {
+    if (selectedIds.size === 1) {
+      const selectedId = Array.from(selectedIds)[0];
+      const selectedPhoto = photos.find(p => p.id === selectedId);
+      if (selectedPhoto) {
+        setViewingPhoto(selectedPhoto);
+      }
+    } else {
+      setViewingPhoto(null);
+    }
+  }, [selectedIds, photos]);
 
   const handleNavigate = (direction: 'prev' | 'next') => {
     if (!viewingPhoto) return;
@@ -98,13 +103,13 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
 
     let nextIndex;
     if (direction === 'next') {
-        nextIndex = (currentIndex + 1) % photos.length;
+      nextIndex = (currentIndex + 1) % photos.length;
     } else {
-        nextIndex = (currentIndex - 1 + photos.length) % photos.length;
+      nextIndex = (currentIndex - 1 + photos.length) % photos.length;
     }
     setViewingPhoto(photos[nextIndex]);
+    setSelectedIds(new Set([photos[nextIndex].id]));
   };
-
 
   const handleSelectAll = () => {
     if (selectedIds.size === photos.length) {
@@ -118,7 +123,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     if (selectedIds.size === 0) return;
     setIsConfirmModalOpen(true);
   };
-  
+
   const confirmDelete = async () => {
     try {
       await deletePhotos(Array.from(selectedIds));
@@ -127,16 +132,15 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     } catch (error) {
       console.error("Failed to delete photos", error);
     } finally {
-        setIsConfirmModalOpen(false);
+      setIsConfirmModalOpen(false);
     }
   };
 
   const handleDownload = () => {
     if (selectedIds.size === 0) return;
     const photosToDownload = photos.filter(p => selectedIds.has(p.id));
-    
+
     photosToDownload.forEach((photo, index) => {
-      // Stagger downloads slightly to avoid browser blocking them
       setTimeout(() => {
         const link = document.createElement('a');
         link.href = photo.dataUrl;
@@ -150,14 +154,12 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
 
   const hasSelection = selectedIds.size > 0;
 
-  
-  
   return (
     <div className="fixed inset-0 bg-gray-800 z-50 flex flex-col p-4 text-white">
       <header className="flex items-center justify-start pb-4 border-b border-gray-600">
         <h2 className="text-2xl font-bold">保存した写真</h2>
       </header>
-      
+
       <div className="flex items-center gap-4 py-4 flex-wrap">
         <button onClick={onClose} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm flex items-center gap-2" aria-label="撮影画面に戻る">
           <ArrowLeftIcon className="h-5 w-5" />
@@ -186,7 +188,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
             {photos.map(photo => {
               const isSelected = selectedIds.has(photo.id);
               return (
-                <div key={photo.id} className="relative aspect-[4/3] cursor-pointer group" onClick={() => toggleSelection(photo.id)}>
+                <div key={photo.id} className="relative aspect-[4/3] cursor-pointer group" onClick={() => handlePhotoClick(photo)}>
                   <img src={photo.dataUrl} alt={`Photo taken on ${photo.createdAt.toLocaleString()}`} className="w-full h-full object-cover rounded-md" />
                   <div className={`absolute inset-0 bg-black transition-opacity rounded-md ${isSelected ? 'opacity-40' : 'opacity-0 group-hover:opacity-20'}`}></div>
                   {isSelected && (
@@ -200,19 +202,24 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           </div>
         )}
       </main>
-      <ConfirmationModal 
+
+            <ConfirmationModal
         isOpen={isConfirmModalOpen}
         message={`選択した ${selectedIds.size} 枚の写真を削除しますか？この操作は元に戻せません。`}
         onConfirm={confirmDelete}
         onCancel={() => setIsConfirmModalOpen(false)}
       />
-     {viewingPhoto && (
-      <PhotoModal
-       photo={viewingPhoto}
-       onClose={() => setViewingPhoto(null)}
-       onNavigate={handleNavigate}
-      />
-     )}
+
+      {viewingPhoto && (
+        <PhotoModal
+          photo={viewingPhoto}
+          onClose={() => {
+            setViewingPhoto(null);
+            setSelectedIds(new Set());
+          }}
+          onNavigate={handleNavigate}
+        />
+      )}
     </div>
   );
 };
