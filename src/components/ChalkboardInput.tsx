@@ -565,9 +565,10 @@ useEffect(() => {
       currentData.groups[activeGroup][listId] = [textToSave, ...(currentData.groups[activeGroup]?.[listId] ?? [])];
       const response = await api.saveAppData(currentData);
       if (response.success) {
-        await fetchInitialData();
+        setAppData(currentData);
         showNotification("保存されました", 'success');
       } else {
+        await fetchInitialData();
         showNotification(response.message || "保存に失敗しました", 'error');
       }
     } finally {
@@ -707,32 +708,88 @@ useEffect(() => {
   const handleModalClose = () => setIsModalOpen(false);
   const handleCancelConfirmation = () => setConfirmationModal({ isOpen: false, message: '', onConfirm: () => {} });
 
+    const checkAndRemoveEmptyGroup = (data: AppData, groupNameToCkeck: string): AppData => {
+        if (groupNameToCkeck === DEFAULT_GROUP_NAME) {
+            return data;
+        }
+
+        const groupData = data.groups[groupNameToCkeck];
+        if (groupData) {
+            const isField1Empty = groupData['field-1'].length === 0;
+            const isField2Empty = groupData['field-2'].length === 0;
+            const isField3Empty = groupData['field-3'].length === 0;
+
+            if (isField1Empty && isField2Empty && isField3Empty) {
+                const originalActiveGroup = data.activeGroup;
+                delete data.groups[groupNameToCkeck];
+                if (originalActiveGroup === groupNameToCkeck) {
+                    data.activeGroup = DEFAULT_GROUP_NAME;
+                }
+            }
+        }
+        return data;
+    };
+
   const handleConfirmBulkDelete = async (listId: 'field-1' | 'field-2') => {
     const listName = listId === 'field-1' ? LABELS[0] : LABELS[2];
-  
+    const groupToDeleteFrom = activeGroup;
+
     if (!isOnline) {
-      setAppData(currentData => {
-        if (!currentData) return null;
-        const newData = JSON.parse(JSON.stringify(currentData));
-        newData.groups[activeGroup][listId] = [];
-        return newData;
-      });
-      offlineManager.addToQueue({ type: 'replace', group: activeGroup, listId, newList: [] });
-      showNotification(`オフラインです。「${listName}」リストをローカルで削除しました。`, 'success');
-      handleCancelConfirmation();
-      return;
+        const originalAppData = appData!;
+        let newData = JSON.parse(JSON.stringify(originalAppData));
+        newData.groups[groupToDeleteFrom][listId] = [];
+        newData = checkAndRemoveEmptyGroup(newData, groupToDeleteFrom);
+        
+        const groupWasDeleted = !newData.groups[groupToDeleteFrom];
+        const activeGroupChanged = newData.activeGroup !== originalAppData.activeGroup;
+
+        setAppData(newData);
+        offlineManager.addToQueue({ type: 'replace', group: groupToDeleteFrom, listId, newList: [] });
+        if (groupWasDeleted) {
+            offlineManager.addToQueue({ type: 'deleteGroup', group: groupToDeleteFrom });
+        }
+        if (activeGroupChanged) {
+            offlineManager.addToQueue({ type: 'setActiveGroup', group: newData.activeGroup });
+            setTexts(currentTexts => {
+                const newTexts = [...currentTexts];
+                newTexts[1] = '';
+                newTexts[3] = '';
+                return newTexts;
+            });
+        }
+
+        showNotification(`オフラインです。「${listName}」リストをローカルで削除しました。`, 'success');
+        handleCancelConfirmation();
+        return;
     }
-  
+
     setIsProcessing(true);
     try {
-        const currentData = await api.getAppData();
-        currentData.groups[activeGroup][listId] = [];
+        let currentData = await api.getAppData();
+        const originalActiveGroup = currentData.activeGroup;
+
+        if (currentData.groups[groupToDeleteFrom]) {
+            currentData.groups[groupToDeleteFrom][listId] = [];
+            currentData = checkAndRemoveEmptyGroup(currentData, groupToDeleteFrom);
+        }
+        
+        const activeGroupChanged = currentData.activeGroup !== originalActiveGroup;
+
         const response = await api.saveAppData(currentData);
         if (response.success) {
-            await fetchInitialData();
+            setAppData(currentData);
+            if (activeGroupChanged) {
+                setTexts(currentTexts => {
+                    const newTexts = [...currentTexts];
+                    newTexts[1] = '';
+                    newTexts[3] = '';
+                    return newTexts;
+                });
+            }
             showNotification(`「${listName}」リストの全項目を削除しました。`, 'success');
         } else {
             showNotification(response.message || '削除に失敗しました。', 'error');
+            await fetchInitialData(); // Re-sync on error
         }
     } finally {
         setIsProcessing(false);
@@ -751,14 +808,32 @@ useEffect(() => {
 
   const performSingleItemDelete = async (group: string, listId: 'field-1'|'field-2'|'field-3', itemToDelete: string) => {
     if (!isOnline) {
-        setAppData(currentData => {
-            if (!currentData) return null;
-            const newData = JSON.parse(JSON.stringify(currentData));
+        const originalAppData = appData!;
+        let newData = JSON.parse(JSON.stringify(originalAppData));
+        if(newData.groups[group]) {
             const list = newData.groups[group]?.[listId] ?? [];
             newData.groups[group][listId] = list.filter(i => i !== itemToDelete);
-            return newData;
-        });
+            newData = checkAndRemoveEmptyGroup(newData, group);
+        }
+
+        const groupWasDeleted = !newData.groups[group];
+        const activeGroupChanged = newData.activeGroup !== originalAppData.activeGroup;
+
+        setAppData(newData);
         offlineManager.addToQueue({ type: 'delete', group, listId, item: itemToDelete });
+
+        if (groupWasDeleted) {
+            offlineManager.addToQueue({ type: 'deleteGroup', group });
+        }
+        if (activeGroupChanged) {
+             offlineManager.addToQueue({ type: 'setActiveGroup', group: newData.activeGroup });
+            setTexts(currentTexts => {
+                const newTexts = [...currentTexts];
+                newTexts[1] = '';
+                newTexts[3] = '';
+                return newTexts;
+            });
+        }
         showNotification("オフラインです。ローカルで削除しました。", 'success');
         handleCancelConfirmation();
         return;
@@ -766,16 +841,32 @@ useEffect(() => {
 
     setIsProcessing(true);
     try {
-        const currentData = await api.getAppData();
-        const list = currentData.groups[group]?.[listId] ?? [];
-        currentData.groups[group][listId] = list.filter(item => item !== itemToDelete);
-        const response = await api.saveAppData(currentData);
+        let currentData = await api.getAppData();
+        const originalActiveGroup = currentData.activeGroup;
 
+        if (currentData.groups[group]) {
+            const list = currentData.groups[group]?.[listId] ?? [];
+            currentData.groups[group][listId] = list.filter(item => item !== itemToDelete);
+            currentData = checkAndRemoveEmptyGroup(currentData, group);
+        }
+
+        const activeGroupChanged = currentData.activeGroup !== originalActiveGroup;
+
+        const response = await api.saveAppData(currentData);
         if (response.success) {
-            await fetchInitialData();
+            setAppData(currentData);
+            if (activeGroupChanged) {
+                setTexts(currentTexts => {
+                    const newTexts = [...currentTexts];
+                    newTexts[1] = '';
+                    newTexts[3] = '';
+                    return newTexts;
+                });
+            }
             showNotification("項目を削除しました。", 'success');
         } else {
             showNotification(response.message || "削除に失敗しました。", 'error');
+            await fetchInitialData();
         }
     } finally {
       setIsProcessing(false);
