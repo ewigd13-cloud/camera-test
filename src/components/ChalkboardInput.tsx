@@ -24,6 +24,8 @@ const Notification: React.FC<{
     );
 };
 
+const SYSTEM_DEFAULT_OPTIONS_FIELD_3 = ['定期点検', '6ヶ月点検', '年次点検', '定期清掃'];
+
 const ListSelectionModal: React.FC<{
   isOpen: boolean;
   groupsData: AppData['groups'];
@@ -34,8 +36,7 @@ const ListSelectionModal: React.FC<{
   onSelect: (value: string) => void;
   onClose: () => void;
   onDelete: (group: string, value: string) => void;
-  isDeletable?: (value: string) => boolean;
-}> = ({ isOpen, groupsData, allGroups, selectedGroup, onGroupChange, listId, onSelect, onClose, onDelete, isDeletable = () => true }) => {
+}> = ({ isOpen, groupsData, allGroups, selectedGroup, onGroupChange, listId, onSelect, onClose, onDelete }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
@@ -45,8 +46,16 @@ const ListSelectionModal: React.FC<{
     }, [isOpen]);
 
     if (!isOpen || !listId) return null;
+    
+    const customOptions = groupsData[selectedGroup]?.[listId] || [];
+    let options: string[] = [];
 
-    const options = groupsData[selectedGroup]?.[listId] || [];
+    if (listId === 'field-3') {
+        options = [...new Set([...SYSTEM_DEFAULT_OPTIONS_FIELD_3, ...customOptions])];
+    } else {
+        options = customOptions;
+    }
+
     const filteredOptions = options.filter(option => 
         option.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -100,7 +109,9 @@ const ListSelectionModal: React.FC<{
                 <ul className="max-h-64 overflow-y-auto border rounded-md bg-gray-50">
                     {options.length > 0 ? (
                         filteredOptions.length > 0 ? (
-                            filteredOptions.map((option) => (
+                            filteredOptions.map((option) => {
+                                const isDefaultItem = listId === 'field-3' && SYSTEM_DEFAULT_OPTIONS_FIELD_3.includes(option);
+                                return (
                                 <li 
                                     key={option} 
                                     className="flex justify-between items-center p-3 hover:bg-blue-100 border-b last:border-b-0 transition-colors text-gray-700"
@@ -113,24 +124,21 @@ const ListSelectionModal: React.FC<{
                                     >
                                         {option}
                                     </span>
-                                     <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(selectedGroup, option);
-                                        }}
-                                        disabled={!isDeletable(option)}
-                                        className={`p-2 rounded-full ml-2 flex-shrink-0 transition-colors ${
-                                            isDeletable(option)
-                                                ? 'text-red-500 hover:text-red-700 hover:bg-red-100'
-                                                : 'text-gray-300 cursor-not-allowed'
-                                        }`}
-                                        aria-label={`Delete option: ${option}`}
-                                        title={isDeletable(option) ? "Delete" : "この項目は削除できません"}
-                                    >
-                                        <TrashIcon />
-                                    </button>
+                                     {!isDefaultItem && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDelete(selectedGroup, option);
+                                            }}
+                                            className="p-2 rounded-full ml-2 flex-shrink-0 transition-colors text-red-500 hover:text-red-700 hover:bg-red-100"
+                                            aria-label={`Delete option: ${option}`}
+                                            title="Delete"
+                                        >
+                                            <TrashIcon />
+                                        </button>
+                                     )}
                                 </li>
-                            ))
+                            )})
                         ) : (
                             <li className="p-3 text-gray-500">一致する項目がありません。</li>
                         )
@@ -202,7 +210,6 @@ interface AppData {
 }
 
 const DEFAULT_GROUP_NAME = '共通';
-const DEFAULT_OPTIONS_FIELD_3 = ['定期点検', '6ヶ月点検', '年次点検', '定期清掃'];
 
 const api = {
     getAppData: async (): Promise<AppData> => {
@@ -216,7 +223,7 @@ const api = {
                         const defaultData: AppData = {
                             activeGroup: DEFAULT_GROUP_NAME,
                             groups: {
-                                [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 }
+                                [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': [] }
                             }
                         };
                         resolve(defaultData);
@@ -225,7 +232,7 @@ const api = {
                     const defaultData: AppData = {
                         activeGroup: DEFAULT_GROUP_NAME,
                         groups: {
-                            [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 }
+                            [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': [] }
                         }
                     };
                     resolve(defaultData);
@@ -267,7 +274,8 @@ const api = {
             const list1 = oldData1 ? JSON.parse(oldData1) : [];
             const list2 = oldData2 ? JSON.parse(oldData2) : [];
             let list3 = oldData3 ? JSON.parse(oldData3) : [];
-            if (list3.length === 0) list3 = DEFAULT_OPTIONS_FIELD_3;
+            // Filter out system default items from migrated data to avoid duplication
+            list3 = list3.filter((item: string) => !SYSTEM_DEFAULT_OPTIONS_FIELD_3.includes(item));
             
             const newData: AppData = {
                 activeGroup: DEFAULT_GROUP_NAME,
@@ -373,10 +381,9 @@ export const WhiteboardGridInput: React.FC<WhiteboardGridInputProps> = ({ texts,
 
   const activeGroup = appData?.activeGroup ?? DEFAULT_GROUP_NAME;
   const allGroups = appData ? Object.keys(appData.groups) : [DEFAULT_GROUP_NAME];
-  const groupsData = appData?.groups ?? { [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 }};
+  const groupsData = appData?.groups ?? { [DEFAULT_GROUP_NAME]: { 'field-1': [], 'field-2': [], 'field-3': [] }};
   const savedOptionsForField1 = appData?.groups[activeGroup]?.['field-1'] ?? [];
   const savedOptionsForField2 = appData?.groups[activeGroup]?.['field-2'] ?? [];
-  const savedOptionsForField3 = appData?.groups[activeGroup]?.['field-3'] ?? [];
 
   const showNotification = useCallback((message: string, type: 'success' | 'error') => {
       if (notificationTimerRef.current) {
@@ -399,7 +406,7 @@ export const WhiteboardGridInput: React.FC<WhiteboardGridInputProps> = ({ texts,
         let data = await api.getAppData();
         
         if (Object.keys(data.groups).length === 0) {
-            data.groups[DEFAULT_GROUP_NAME] = { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 };
+            data.groups[DEFAULT_GROUP_NAME] = { 'field-1': [], 'field-2': [], 'field-3': [] };
             data.activeGroup = DEFAULT_GROUP_NAME;
         }
         if (!data.groups[data.activeGroup]) {
@@ -440,7 +447,7 @@ export const WhiteboardGridInput: React.FC<WhiteboardGridInputProps> = ({ texts,
                     break;
                 case 'replace':
                     if (!currentData.groups[action.group]) {
-                        currentData.groups[action.group] = { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 };
+                        currentData.groups[action.group] = { 'field-1': [], 'field-2': [], 'field-3': [] };
                     }
                     currentData.groups[action.group][action.listId as keyof typeof currentData.groups[string]] = action.newList;
                     break;
@@ -518,6 +525,11 @@ useEffect(() => {
     else if (index === 3) listId = 'field-2';
     else if (index === 5) listId = 'field-3';
     else return;
+
+    if (listId === 'field-3' && SYSTEM_DEFAULT_OPTIONS_FIELD_3.includes(textToSave)) {
+        showNotification("基本項目はリストに追加できません。", 'error');
+        return;
+    }
     
     const currentOptions = appData?.groups[activeGroup]?.[listId] ?? [];
 
@@ -531,7 +543,7 @@ useEffect(() => {
             if (!currentData) return null;
             const newData = JSON.parse(JSON.stringify(currentData)); // deep copy
             if (!newData.groups[activeGroup]) {
-                newData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 };
+                newData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': [] };
             }
             const list = newData.groups[activeGroup]?.[listId] ?? [];
             if (!list.includes(textToSave)) {
@@ -548,7 +560,7 @@ useEffect(() => {
     try {
       const currentData = await api.getAppData();
       if (!currentData.groups[activeGroup]) {
-          currentData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 };
+          currentData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': [] };
       }
       currentData.groups[activeGroup][listId] = [textToSave, ...(currentData.groups[activeGroup]?.[listId] ?? [])];
       const response = await api.saveAppData(currentData);
@@ -638,7 +650,7 @@ useEffect(() => {
                 const processImport = (currentData: AppData): { newData: AppData, newItemsCount: number } => {
                     const newData = JSON.parse(JSON.stringify(currentData));
                     if (!newData.groups[groupFromFile]) {
-                        newData.groups[groupFromFile] = { 'field-1': [], 'field-2': [], 'field-3': DEFAULT_OPTIONS_FIELD_3 };
+                        newData.groups[groupFromFile] = { 'field-1': [], 'field-2': [], 'field-3': [] };
                     }
                     const currentItems = newData.groups[groupFromFile]?.[listId] ?? [];
                     const newItems = linesFromFile.filter(line => !currentItems.includes(line));
@@ -775,6 +787,11 @@ useEffect(() => {
     const listId = getListIdFromIndex(currentTargetIndex);
     if (!listId) return;
 
+    if (listId === 'field-3' && SYSTEM_DEFAULT_OPTIONS_FIELD_3.includes(item)) {
+        showNotification("基本項目は削除できません。", 'error');
+        return;
+    }
+
     setIsModalOpen(false);
     setConfirmationModal({
         isOpen: true,
@@ -791,7 +808,6 @@ useEffect(() => {
         const newTexts = [...texts];
         newTexts[1] = '';
         newTexts[3] = '';
-        newTexts[5] = '';
         setTexts(newTexts);
 
         const optimisticData = { ...appData, activeGroup: newGroup };
@@ -830,12 +846,6 @@ useEffect(() => {
     };
 
   const isUIBlocked = isProcessing || isSyncing || appData === null;
-
-  const isOptionDeletable = useCallback((option: string) => {
-    const listId = getListIdFromIndex(currentTargetIndex);
-    if (listId !== 'field-3') return true;
-    return !DEFAULT_OPTIONS_FIELD_3.includes(option);
-  }, [currentTargetIndex]);
   
   const commonInputClasses = "w-full bg-transparent text-center text-lg font-marker text-gray-900 border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition py-3 px-1 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-500";
   const commonTextareaClasses = `${commonInputClasses} resize-none overflow-hidden`;
@@ -885,7 +895,7 @@ useEffect(() => {
             </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-4 items-start">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
             <div className="text-center">
                 <h4 className="text-sm font-bold text-gray-600 mb-2">{LABELS[0]} リスト ({activeGroup})</h4>
                 <div className="flex flex-col justify-center gap-2">
@@ -914,8 +924,7 @@ useEffect(() => {
             listId={getListIdFromIndex(currentTargetIndex)}
             onSelect={handleModalSelect} 
             onClose={handleModalClose} 
-            onDelete={handleModalItemDelete} 
-            isDeletable={isOptionDeletable} 
+            onDelete={handleModalItemDelete}
         />
         <ConfirmationModal isOpen={confirmationModal.isOpen} message={confirmationModal.message} onConfirm={confirmationModal.onConfirm} onCancel={handleCancelConfirmation} isProcessing={isProcessing} confirmText={confirmationModal.confirmText} />
     </div>
