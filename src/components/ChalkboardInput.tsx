@@ -786,7 +786,14 @@ useEffect(() => {
     
     const handleGroupChange = async (newGroup: string) => {
         if (newGroup === activeGroup || !appData) return;
-    
+        
+        const oldTexts = [...texts];
+        const newTexts = [...texts];
+        newTexts[1] = '';
+        newTexts[3] = '';
+        newTexts[5] = '';
+        setTexts(newTexts);
+
         const optimisticData = { ...appData, activeGroup: newGroup };
         setAppData(optimisticData);
     
@@ -803,10 +810,12 @@ useEffect(() => {
             const response = await api.saveAppData(dataToSave);
             if (!response.success) {
                 setAppData(appData); // Revert on failure
+                setTexts(oldTexts);
                 showNotification(response.message || "グループの切り替えに失敗しました", 'error');
             }
         } catch(e) {
             setAppData(appData); // Revert on failure
+            setTexts(oldTexts);
             showNotification("グループの切り替え中にエラーが発生しました", 'error');
         } finally {
             setIsProcessing(false);
