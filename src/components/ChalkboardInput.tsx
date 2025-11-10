@@ -26,6 +26,8 @@ const Notification: React.FC<{
 
 const SYSTEM_DEFAULT_OPTIONS_FIELD_3 = ['定期点検', '6ヶ月点検', '年次点検', '定期清掃'];
 
+const DEFAULT_GROUP_NAME = '共通';
+
 const ListSelectionModal: React.FC<{
   isOpen: boolean;
   groupsData: AppData['groups'];
@@ -47,7 +49,10 @@ const ListSelectionModal: React.FC<{
 
     if (!isOpen || !listId) return null;
     
-    const customOptions = groupsData[selectedGroup]?.[listId] || [];
+    const isField3 = listId === 'field-3';
+    const currentGroupForOptions = isField3 ? DEFAULT_GROUP_NAME : selectedGroup;
+
+    const customOptions = groupsData[currentGroupForOptions]?.[listId] || [];
     let options: string[] = [];
 
     if (listId === 'field-3') {
@@ -76,24 +81,12 @@ const ListSelectionModal: React.FC<{
             >
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-gray-800">{listName}を選択</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100" aria-label="Close modal">
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100" aria-label="閉じる">
                         <CloseIcon />
                     </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label htmlFor="modal-group-selector" className="block text-sm font-medium text-gray-700 mb-1">グループ</label>
-                        <select
-                            id="modal-group-selector"
-                            value={selectedGroup}
-                            onChange={(e) => onGroupChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            aria-label="Select group"
-                        >
-                            {allGroups.map(group => <option key={group} value={group}>{group}</option>)}
-                        </select>
-                    </div>
-                    <div>
+                {isField3 ? (
+                    <div className="mb-4">
                         <label htmlFor="modal-search-input" className="block text-sm font-medium text-gray-700 mb-1">絞り込み</label>
                         <input
                             id="modal-search-input"
@@ -102,10 +95,37 @@ const ListSelectionModal: React.FC<{
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            aria-label="Filter options"
+                            aria-label="選択肢を絞り込む"
                         />
                     </div>
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label htmlFor="modal-group-selector" className="block text-sm font-medium text-gray-700 mb-1">グループ</label>
+                            <select
+                                id="modal-group-selector"
+                                value={selectedGroup}
+                                onChange={(e) => onGroupChange(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                aria-label="グループを選択"
+                            >
+                                {allGroups.map(group => <option key={group} value={group}>{group}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="modal-search-input" className="block text-sm font-medium text-gray-700 mb-1">絞り込み</label>
+                            <input
+                                id="modal-search-input"
+                                type="text"
+                                placeholder="検索..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                aria-label="選択肢を絞り込む"
+                            />
+                        </div>
+                    </div>
+                )}
                 <ul className="max-h-64 overflow-y-auto border rounded-md bg-gray-50">
                     {options.length > 0 ? (
                         filteredOptions.length > 0 ? (
@@ -128,11 +148,11 @@ const ListSelectionModal: React.FC<{
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onDelete(selectedGroup, option);
+                                                onDelete(currentGroupForOptions, option);
                                             }}
                                             className="p-2 rounded-full ml-2 flex-shrink-0 transition-colors text-red-500 hover:text-red-700 hover:bg-red-100"
-                                            aria-label={`Delete option: ${option}`}
-                                            title="Delete"
+                                            aria-label={`選択肢を削除: ${option}`}
+                                            title="削除"
                                         >
                                             <TrashIcon />
                                         </button>
@@ -208,8 +228,6 @@ interface AppData {
         };
     };
 }
-
-const DEFAULT_GROUP_NAME = '共通';
 
 const api = {
     getAppData: async (): Promise<AppData> => {
@@ -526,12 +544,15 @@ useEffect(() => {
     else if (index === 5) listId = 'field-3';
     else return;
 
+    const isField3 = listId === 'field-3';
+    const groupToSaveIn = isField3 ? DEFAULT_GROUP_NAME : activeGroup;
+
     if (listId === 'field-3' && SYSTEM_DEFAULT_OPTIONS_FIELD_3.includes(textToSave)) {
         showNotification("基本項目はリストに追加できません。", 'error');
         return;
     }
     
-    const currentOptions = appData?.groups[activeGroup]?.[listId] ?? [];
+    const currentOptions = appData?.groups[groupToSaveIn]?.[listId] ?? [];
 
     if (currentOptions.includes(textToSave)) {
         showNotification("既に登録されています", 'error');
@@ -542,16 +563,16 @@ useEffect(() => {
         setAppData(currentData => {
             if (!currentData) return null;
             const newData = JSON.parse(JSON.stringify(currentData)); // deep copy
-            if (!newData.groups[activeGroup]) {
-                newData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': [] };
+            if (!newData.groups[groupToSaveIn]) {
+                newData.groups[groupToSaveIn] = { 'field-1': [], 'field-2': [], 'field-3': [] };
             }
-            const list = newData.groups[activeGroup]?.[listId] ?? [];
+            const list = newData.groups[groupToSaveIn]?.[listId] ?? [];
             if (!list.includes(textToSave)) {
-                newData.groups[activeGroup][listId].unshift(textToSave);
+                newData.groups[groupToSaveIn][listId].unshift(textToSave);
             }
             return newData;
         });
-        offlineManager.addToQueue({ type: 'add', group: activeGroup, listId, item: textToSave });
+        offlineManager.addToQueue({ type: 'add', group: groupToSaveIn, listId, item: textToSave });
         showNotification("オフラインです。ローカルに保存しました。", 'success');
         return;
     }
@@ -559,10 +580,10 @@ useEffect(() => {
     setIsProcessing(true);
     try {
       const currentData = await api.getAppData();
-      if (!currentData.groups[activeGroup]) {
-          currentData.groups[activeGroup] = { 'field-1': [], 'field-2': [], 'field-3': [] };
+      if (!currentData.groups[groupToSaveIn]) {
+          currentData.groups[groupToSaveIn] = { 'field-1': [], 'field-2': [], 'field-3': [] };
       }
-      currentData.groups[activeGroup][listId] = [textToSave, ...(currentData.groups[activeGroup]?.[listId] ?? [])];
+      currentData.groups[groupToSaveIn][listId] = [textToSave, ...(currentData.groups[groupToSaveIn]?.[listId] ?? [])];
       const response = await api.saveAppData(currentData);
       if (response.success) {
         setAppData(currentData);
@@ -646,7 +667,7 @@ useEffect(() => {
                 }
 
                 const match = file.name.match(/\((.*?)\)\.txt$/);
-                const groupFromFile = match ? match[1].trim() : activeGroup;
+                const groupFromFile = match ? match[1].trim() : DEFAULT_GROUP_NAME;
                 
                 const processImport = (currentData: AppData): { newData: AppData, newItemsCount: number } => {
                     const newData = JSON.parse(JSON.stringify(currentData));
