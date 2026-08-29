@@ -61,7 +61,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     } else {
       newSelectedIds.add(id);
     }
-    setSelectedIds(newSelectedSelectedIds);
+    setSelectedIds(newSelectedIds);
   };
 
   const handlePhotoClick = (photo: PhotoRecord) => {
@@ -111,9 +111,8 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     }
   };
 
-  // Android / PC 用の複数ダウンロード
   const handleDownload = () => {
-    if (isIOS) return; // iOS は PhotoModal 側で保存するため使わない
+    if (isIOS) return;
 
     if (selectedIds.size === 0) return;
     const photosToDownload = photos.filter(p => selectedIds.has(p.id));
@@ -134,11 +133,21 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-800 z-50 flex flex-col p-4 text-white">
-      <header className="flex items-center justify-start pb-4 border-b border-gray-600">
+
+      <header className="flex items-center justify-start pb-4 border-b border-gray-600 flex-shrink-0">
         <h2 className="text-2xl font-bold">保存した写真</h2>
       </header>
 
-      <div className="flex items-center gap-4 py-4 flex-wrap">
+      {/* ⭐ iOS 専用の操作説明（flex-shrink-0 を追加） */}
+      {isIOS && (
+        <div className="w-full bg-yellow-500 text-black text-sm p-3 rounded-md mt-2 flex-shrink-0">
+          <p className="font-bold mb-1">📱 iPhoneでの保存方法</p>
+          <p>1枚だけ選択してプレビューを開き、画面下の「保存する」ボタンを押してください。</p>
+          <p className="mt-1">Safariが開いたら、画像を長押しして「写真に追加」で保存できます。</p>
+        </div>
+      )}
+
+      <div className="flex items-center gap-4 py-4 flex-wrap flex-shrink-0">
         <button onClick={onClose} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm flex items-center gap-2" aria-label="撮影画面に戻る">
           <ArrowLeftIcon className="h-5 w-5" />
           <span>撮影に戻る</span>
@@ -148,7 +157,6 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           {selectedIds.size === photos.length && photos.length > 0 ? '選択解除' : 'すべて選択'}
         </button>
 
-        {/* ⭐ iOS のときはダウンロードボタンを完全非表示 */}
         {!isIOS && (
           <button
             onClick={handleDownload}
@@ -165,15 +173,6 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           <span>{hasSelection ? `${selectedIds.size}枚` : ''} 削除</span>
         </button>
       </div>
-
-      {/* ⭐ iOS 専用の操作説明 */}
-      {isIOS && (
-        <div className="w-full bg-yellow-500 text-black text-sm p-3 rounded-md mt-2">
-          <p className="font-bold mb-1">📱 iPhoneでの保存方法</p>
-          <p>1枚だけ選択してプレビューを開き、画面下の「保存する」ボタンを押してください。</p>
-          <p className="mt-1">Safariが開いたら、画像を長押しして「写真に追加」で保存できます。</p>
-        </div>
-      )}
 
       <main className="flex-1 overflow-y-auto">
         {isLoading ? (
