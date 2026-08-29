@@ -67,6 +67,7 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
     >
       <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         
+        {/* 左ナビゲーション */}
         <button
           className="absolute left-2 md:left-4 text-white hover:text-gray-300 p-2 md:p-3 bg-black bg-opacity-50 rounded-full z-20"
           onClick={() => onNavigate('prev')}
@@ -75,12 +76,14 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
           <ArrowLeftIcon className="h-6 w-6 md:h-8 md:w-8" />
         </button>
 
+        {/* メイン画像 */}
         <div
           className="relative flex flex-col items-center justify-center max-w-full max-h-full"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
+          {/* 閉じるボタン */}
           <button
             className="absolute top-2 right-2 text-white p-2 bg-black bg-opacity-60 rounded-full hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white transition-opacity z-10"
             onClick={(e) => {
@@ -103,9 +106,17 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
             <p className="text-xs md:text-sm text-gray-300">{new Date(photo.createdAt).toLocaleString('ja-JP')}</p>
           </div>
 
+          {/* ⭐ iOS 専用「保存する」ボタン（Blob 化で真っ黒タブ問題を完全解決） */}
           {isIOS && (
             <button
-              onClick={() => window.open(photo.dataUrl, "_blank")}
+              onClick={() => {
+                fetch(photo.dataUrl)
+                  .then(res => res.blob())
+                  .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl, "_blank");
+                  });
+              }}
               className="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-md shadow-lg z-20"
             >
               保存する
@@ -113,6 +124,7 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
           )}
         </div>
 
+        {/* 右ナビゲーション */}
         <button
           className="absolute right-2 md:right-4 text-white hover:text-gray-300 p-2 md:p-3 bg-black bg-opacity-50 rounded-full z-20"
           onClick={() => onNavigate('next')}
