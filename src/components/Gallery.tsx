@@ -36,6 +36,8 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<PhotoRecord | null>(null);
 
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   const fetchPhotos = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -110,6 +112,14 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
   };
 
   const handleDownload = () => {
+    // iOS → viewingPhoto の1枚だけ保存
+    if (isIOS) {
+      if (!viewingPhoto) return;
+      window.open(viewingPhoto.dataUrl, "_blank");
+      return;
+    }
+
+    // Android / PC → 従来通り複数枚保存
     if (selectedIds.size === 0) return;
     const photosToDownload = photos.filter(p => selectedIds.has(p.id));
 
@@ -138,13 +148,20 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           <ArrowLeftIcon className="h-5 w-5" />
           <span>撮影に戻る</span>
         </button>
+
         <button onClick={handleSelectAll} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">
           {selectedIds.size === photos.length && photos.length > 0 ? '選択解除' : 'すべて選択'}
         </button>
-        <button onClick={handleDownload} disabled={!hasSelection} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed text-sm">
+
+        <button
+          onClick={handleDownload}
+          disabled={!hasSelection || (isIOS && selectedIds.size !== 1)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed text-sm"
+        >
           <DownloadIcon />
           <span>{hasSelection ? `${selectedIds.size}枚` : ''} ダウンロード</span>
         </button>
+
         <button onClick={handleDelete} disabled={!hasSelection} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-red-800 disabled:cursor-not-allowed text-sm">
           <TrashIcon />
           <span>{hasSelection ? `${selectedIds.size}枚` : ''} 削除</span>
@@ -183,7 +200,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
         onCancel={() => setIsConfirmModalOpen(false)}
       />
 
-            {viewingPhoto && (
+      {viewingPhoto && (
         <PhotoModal
           photo={viewingPhoto}
           onClose={() => {
