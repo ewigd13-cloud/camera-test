@@ -111,15 +111,10 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     }
   };
 
+  // Android / PC 用の複数ダウンロード
   const handleDownload = () => {
-    // iOS → viewingPhoto の1枚だけ保存
-    if (isIOS) {
-      if (!viewingPhoto) return;
-      window.open(viewingPhoto.dataUrl, "_blank");
-      return;
-    }
+    if (isIOS) return; // iOS は PhotoModal 側で保存するため使わない
 
-    // Android / PC → 従来通り複数枚保存
     if (selectedIds.size === 0) return;
     const photosToDownload = photos.filter(p => selectedIds.has(p.id));
 
@@ -153,14 +148,17 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           {selectedIds.size === photos.length && photos.length > 0 ? '選択解除' : 'すべて選択'}
         </button>
 
-        <button
-          onClick={handleDownload}
-          disabled={!hasSelection || (isIOS && selectedIds.size !== 1)}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed text-sm"
-        >
-          <DownloadIcon />
-          <span>{hasSelection ? `${selectedIds.size}枚` : ''} ダウンロード</span>
-        </button>
+        {/* ⭐ iOS のときはダウンロードボタンを完全非表示 */}
+        {!isIOS && (
+          <button
+            onClick={handleDownload}
+            disabled={!hasSelection}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed text-sm"
+          >
+            <DownloadIcon />
+            <span>{hasSelection ? `${selectedIds.size}枚` : ''} ダウンロード</span>
+          </button>
+        )}
 
         <button onClick={handleDelete} disabled={!hasSelection} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-red-800 disabled:cursor-not-allowed text-sm">
           <TrashIcon />
