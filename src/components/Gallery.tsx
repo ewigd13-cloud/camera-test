@@ -61,7 +61,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
     } else {
       newSelectedIds.add(id);
     }
-    setSelectedIds(newSelectedIds);
+    setSelectedIds(newSelectedSelectedIds);
   };
 
   const handlePhotoClick = (photo: PhotoRecord) => {
@@ -165,6 +165,15 @@ export const Gallery: React.FC<GalleryProps> = ({ onClose }) => {
           <span>{hasSelection ? `${selectedIds.size}枚` : ''} 削除</span>
         </button>
       </div>
+
+      {/* ⭐ iOS 専用の操作説明 */}
+      {isIOS && (
+        <div className="w-full bg-yellow-500 text-black text-sm p-3 rounded-md mt-2">
+          <p className="font-bold mb-1">📱 iPhoneでの保存方法</p>
+          <p>1枚だけ選択してプレビューを開き、画面下の「保存する」ボタンを押してください。</p>
+          <p className="mt-1">Safariが開いたら、画像を長押しして「写真に追加」で保存できます。</p>
+        </div>
+      )}
 
       <main className="flex-1 overflow-y-auto">
         {isLoading ? (
