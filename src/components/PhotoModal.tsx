@@ -67,7 +67,6 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
     >
       <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         
-        {/* 左ナビゲーション */}
         <button
           className="absolute left-2 md:left-4 text-white hover:text-gray-300 p-2 md:p-3 bg-black bg-opacity-50 rounded-full z-20"
           onClick={() => onNavigate('prev')}
@@ -76,14 +75,12 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
           <ArrowLeftIcon className="h-6 w-6 md:h-8 md:w-8" />
         </button>
 
-        {/* メイン画像 */}
         <div
           className="relative flex flex-col items-center justify-center max-w-full max-h-full"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* 閉じるボタン */}
           <button
             className="absolute top-2 right-2 text-white p-2 bg-black bg-opacity-60 rounded-full hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white transition-opacity z-10"
             onClick={(e) => {
@@ -104,3 +101,27 @@ export const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, onNaviga
           <div className="text-center mt-2 p-2 bg-black bg-opacity-60 rounded-md pointer-events-none">
             <p id="photo-modal-filename" className="font-bold text-sm md:text-base">{photo.filename}</p>
             <p className="text-xs md:text-sm text-gray-300">{new Date(photo.createdAt).toLocaleString('ja-JP')}</p>
+          </div>
+
+          {isIOS && (
+            <button
+              onClick={() => window.open(photo.dataUrl, "_blank")}
+              className="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-md shadow-lg z-20"
+            >
+              保存する
+            </button>
+          )}
+        </div>
+
+        <button
+          className="absolute right-2 md:right-4 text-white hover:text-gray-300 p-2 md:p-3 bg-black bg-opacity-50 rounded-full z-20"
+          onClick={() => onNavigate('next')}
+          aria-label="次の写真"
+        >
+          <ArrowRightIcon className="h-6 w-6 md:h-8 md:w-8" />
+        </button>
+
+      </div>
+    </div>
+  );
+};
